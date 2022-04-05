@@ -35,7 +35,7 @@ class SMSController extends Controller
 
        $tel=$request['destination'];
 
-       return 
+       //return 
 
         //Validate If number is in Blacklist
         $exists= Blacklist::where('telephone', 'LIKE', substr($tel, -9))->count(); //0 720 000 000
@@ -47,8 +47,8 @@ class SMSController extends Controller
             //fetch ATK gateway parameters
             $atk_param= Settings::where('gate_way', 'LIKE', $request->gateway)->get();
 
-             $username = $atk_param[0]['user']; // use 'sandbox' for development in the test environment
-            $apiKey   = $atk_param[0]['api_key']; // use your sandbox app API key for development in the test environment
+             $username = $atk_param[0]['user']; // Set AT User
+            $apiKey   = $atk_param[0]['api_key']; // Set AT Key
              $AT       = new AfricasTalking($username, $apiKey);
 
                 // Get one of the services
@@ -92,7 +92,7 @@ class SMSController extends Controller
             $sms->internal_status='Not Sent'; 
             $saved_sms= $sms->save();
 
-            return response()->json(array('success'=>true, 'message'=>'NotSent') , 200);
+            return response()->json(array('success'=>true, 'message'=>'NotSent', 'status'=>'Blacklisted') , 200);
             exit();
 
         }

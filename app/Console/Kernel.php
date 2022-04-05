@@ -5,6 +5,10 @@ namespace App\Console;
 use Illuminate\Console\Scheduling\Schedule;
 use Laravel\Lumen\Console\Kernel as ConsoleKernel;
 
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Response;
+
+
 class Kernel extends ConsoleKernel
 {
     /**
