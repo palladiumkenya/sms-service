@@ -90,9 +90,10 @@ class SMSController extends Controller
             $sms->sender_id = $request->sender_id;
             $sms->gateway = $request->gateway;
             $sms->internal_status='Not Sent'; 
+            $sms->message_status='Blacklisted';
             $saved_sms= $sms->save();
 
-            return response()->json(array('success'=>true, 'message'=>'NotSent', 'status'=>'Blacklisted') , 200);
+            return response()->json(array('status'=>'blacklisted', 'data'=>array('SMSMessageData'=>array('Message'=>'','Recipients'=>array()))) , 200);
             exit();
 
         }
@@ -140,10 +141,11 @@ class SMSController extends Controller
         if(trim($c_reason)=='UserInBlackList')
         {
              $b_list = new Blacklist;
-                        $b_list->telephone = $c_number;
+                        $b_list->telephone = substr($c_number, -9);
                         $b_list->app_id = 1;
                         $b_list->date_added =  date('Y-m-d H:i:s');
-                        $b_list->msg_id = $c_msg_id;
+                        $b_list->sms_id = $c_msg_id;
+                        $b_list->b_status = 1;
                         $saved_b_list= $b_list->save();
 
         }
