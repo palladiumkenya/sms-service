@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sms;
+use App\Models\Apps;
 use App\Models\Blacklist;
 use App\Models\Settings;
 use Illuminate\Http\Request;
@@ -34,6 +35,10 @@ class SMSController extends Controller
         ]);
 
        $tel=$request['destination'];
+       //Fetch API ID details
+       $header = $request->header('api-token');
+       $api_id=Apps::where('api_key', $header)->first();
+      // return response()->json($api_id , 200);
 
        //return 
 
@@ -70,7 +75,7 @@ class SMSController extends Controller
                 $sms->sender_id = $request->sender_id;
                 $sms->gateway = $request->gateway;
                 $sms->internal_status='sent'; 
-                $sms->app_id=0;
+                $sms->app_id=$api_id['tbl_app_id'];
                 $sms->cost=$data['data']['SMSMessageData']['Recipients'][0]['cost'];
                 $sms->msg_id=$data['data']['SMSMessageData']['Recipients'][0]['messageId'];
                 $sms->message_status=$data['data']['SMSMessageData']['Recipients'][0]['status'];
@@ -89,6 +94,7 @@ class SMSController extends Controller
             $sms->received_date =  date('Y-m-d H:i:s');
             $sms->sender_id = $request->sender_id;
             $sms->gateway = $request->gateway;
+            $sms->app_id=$api_id['tbl_app_id'];
             $sms->internal_status='Not Sent'; 
             $sms->message_status='Blacklisted';
             $saved_sms= $sms->save();
@@ -130,19 +136,43 @@ class SMSController extends Controller
         $c_number=$request['phoneNumber'];
         $c_code=$request['networkCode'];
         $c_reason=$request['failureReason'];
+        $c_count=$request['retryCount'];
 
         //Update SMS Data Model on the New Status 
         Sms::where('msg_id',  $c_msg_id)->update(array('message_status' =>  $c_status, 'callback_status' =>  $c_status, 'n_code' =>  $c_code,'f_reason' =>  $c_reason,'callback_date'=>date('Y-m-d H:i:s')));
 
-        //Fetch Callback uRL for requesting Application
+        //Fetch Callback URL for requesting Application
+        $cback_api= Sms::where('msg_id', 'LIKE', $c_msg_id)->get();
+        $app_id = $cback_api[0]['app_id']; // Set app_id User
 
+        //Fetch CallBackURL
+        $c_backurls=Apps::where('tbl_app_id', $app_id)->first();
+        $c_back_url = $c_backurls['callback_url']; // Set Call Back URL
+        $c_enabled = $c_backurls['c_enabled']; // Set Call Back Enabled
+        
+        if($c_enabled=='1')
+        {
+
+            //Call call back URL
+            $client = new \GuzzleHttp\Client();
+        $response = $client->request('POST',$c_back_url,  [
+            'id' =>  $c_msg_id,
+                'status' => $c_status,
+                'phoneNumber' => $c_number,
+                'networkCode' => $c_code,
+                    'failureReason' =>  $c_reason,
+                    'retryCount' => $c_count
+                
+            ]); 
+
+        }
 
         //If blacklisted Save in the Blacklist Model
         if(trim($c_reason)=='UserInBlackList')
         {
              $b_list = new Blacklist;
                         $b_list->telephone = substr($c_number, -9);
-                        $b_list->app_id = 1;
+                        $b_list->app_id = $app_id;
                         $b_list->date_added =  date('Y-m-d H:i:s');
                         $b_list->sms_id = $c_msg_id;
                         $b_list->b_status = 1;
