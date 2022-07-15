@@ -1,0 +1,29 @@
+name: deploy to test
+on:
+  push:
+    branches: [ main ]
+jobs:
+
+  build:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: executing remote connection
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.HOST_USERNAME }}
+        key: ${{ secrets.CICD_SECRET }}
+        port: ${{ secrets.HOST_PORT }}
+        script: |
+          git config --global --add safe.directory /apps/github-workflows/mhealth-apps/sms-service      
+          cd /apps/github-workflows/mhealth-apps/sms-service
+          git pull origin main
+          git status
+          composer install
+          cp -R /apps/dockerApps/smsservicesite/nginx /apps/github-workflows/mhealth-apps/sms-service
+          cp  /apps/dockerApps/smsservicesite/nginx.dockerfile /apps/github-workflows/mhealth-apps/sms-service
+          cp  /apps/dockerApps/smsservicesite/.env /apps/github-workflows/mhealth-apps/sms-service
+          cp  /apps/dockerApps/smsservicesite/php.dockerfile /apps/github-workflows/mhealth-apps/sms-service
+          docker-compose down
+          docker-compose up --build -d
