@@ -1,4 +1,4 @@
-name: deploy to test
+name: Deploying sms-service to testing instance
 on:
   push:
     branches: [ main ]
@@ -12,18 +12,28 @@ jobs:
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.HOST }}
-        username: ${{ secrets.HOST_USERNAME }}
+        username: ${{ secrets.USERNAME }}
         key: ${{ secrets.CICD_SECRET }}
-        port: ${{ secrets.HOST_PORT }}
+        port: ${{ secrets.PORT }}
         script: |
-          git config --global --add safe.directory /apps/github-workflows/mhealth-apps/sms-service      
-          cd /apps/github-workflows/mhealth-apps/sms-service
-          git pull origin main
+          cd /apps/github-workflows/mhealth-apps/
+          sudo rm -rf sms-service
+          sudo mkdir sms-service
+          sudo chown -R cicd2:cicd2 sms-service
+          git config --global --add safe.directory /apps/github-workflows/mhealth-apps/sms-service/      
+          cd sms-service
+          git clone -b main https://github.com/palladiumkenya/sms-service.git .
           git status
-          composer install
-          cp -R /apps/dockerApps/smsservicesite/nginx /apps/github-workflows/mhealth-apps/sms-service
-          cp  /apps/dockerApps/smsservicesite/nginx.dockerfile /apps/github-workflows/mhealth-apps/sms-service
-          cp  /apps/dockerApps/smsservicesite/.env /apps/github-workflows/mhealth-apps/sms-service
-          cp  /apps/dockerApps/smsservicesite/php.dockerfile /apps/github-workflows/mhealth-apps/sms-service
+          cp /apps/configs/sms-service/.env /apps/github-workflows/mhealth-apps/sms-service/
+          cp /apps/configs/sms-service/docker-compose.yml /apps/github-workflows/mhealth-apps/sms-service/
+          cp /apps/configs/sms-service/nginx.dockerfile /apps/github-workflows/mhealth-apps/sms-service/
+          cp /apps/configs/sms-service/php.dockerfile /apps/github-workflows/mhealth-apps/sms-service/
+          cp -r /apps/configs/sms-service/nginx /apps/github-workflows/mhealth-apps/sms-service/
           docker-compose down
-          docker-compose up --build -d
+          docker-compose rm -f
+          docker-compose --env-file .env up -d --build site
+          # execute normal laravel commands
+          docker-compose exec -T php composer install --ignore-platform-reqs --no-dev
+          docker-compose exec -T php php artisan config:cache
+          docker-compose exec -T php php artisan view:cache
+          docker-compose exec -T php chmod -R 777 storage/
