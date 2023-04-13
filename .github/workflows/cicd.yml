@@ -24,7 +24,7 @@ jobs:
             cd sms-service
             git clone -b main https://github.com/palladiumkenya/sms-service.git .
             git status
-            #cp /apps/configs/sms-service/.env /apps/github-workflows/mhealth-apps/sms-service/
+            cp /apps/configs/sms-service/.env /apps/github-workflows/mhealth-apps/sms-service/
             #cp /apps/configs/sms-service/docker-compose.yml /apps/github-workflows/mhealth-apps/sms-service/
             #cp /apps/configs/sms-service/nginx.dockerfile /apps/github-workflows/mhealth-apps/sms-service/
             #cp /apps/configs/sms-service/php.dockerfile /apps/github-workflows/mhealth-apps/sms-service/
