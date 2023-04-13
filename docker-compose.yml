@@ -1,0 +1,16 @@
+version: '3.0'
+networks:
+   sms-service:
+
+services:
+  sms-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sms
+    restart: always
+    ports:
+      - "8181:8181"
+    networks:
+      - sms-service
+
